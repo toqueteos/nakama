@@ -15,23 +15,21 @@
 # docker build . --file ./Dockerfile --build-arg version=v2.1.1 -t heroiclabs/nakama-pluginbuilder:2.1.1
 # docker build . --file ./Dockerfile --build-arg version="v2.1.1-$(git rev-parse --short HEAD)" -t heroiclabs/nakama-pluginbuilder:"2.1.1-$(git rev-parse --short HEAD)"
 
-FROM golang:1.22.5-bookworm as builder
-
-MAINTAINER Heroic Labs <support@heroiclabs.com>
+FROM golang:1.22.5-bookworm AS builder
 
 ARG version
 
 LABEL version=$version
 LABEL variant=nakama-pluginbuilder
+LABEL org.opencontainers.image.authors="support@heroiclabs.com"
 LABEL description="A support container to build Go code for Nakama server's runtime."
 
-ENV GOOS linux
-ENV GOARCH amd64
-ENV CGO_ENABLED 1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CGO_ENABLED=1
 
 RUN apt-get update && \
     apt-get -y upgrade && \
-    apt-get install -y --no-install-recommends ca-certificates gcc libc6-dev git && \
+    apt-get install -y --no-install-recommends ca-certificates gcc libc6-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

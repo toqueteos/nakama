@@ -15,34 +15,32 @@
 # docker build "$PWD" --build-arg commit="$(git rev-parse --short HEAD)" --build-arg version=v2.1.1 -t heroiclabs/nakama:2.1.1
 # docker build "$PWD" --build-arg commit="$(git rev-parse --short HEAD)" --build-arg version="$(git rev-parse --short HEAD)" -t heroiclabs/nakama-prerelease:"$(git rev-parse --short HEAD)"
 
-FROM golang:1.22.5-bookworm as builder
+FROM golang:1.22.5-bookworm AS builder
 
 ARG commit
 ARG version
 
-ENV GOOS linux
-ENV GOARCH amd64
-ENV CGO_ENABLED 1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CGO_ENABLED=1
 
 RUN apt-get update && \
     apt-get -y upgrade && \
-    apt-get install -y --no-install-recommends ca-certificates gcc libc6-dev git && \
-    git config --global advice.detachedHead false && \
-    git clone --quiet --no-checkout https://github.com/heroiclabs/nakama /go/build/nakama
+    apt-get install -y --no-install-recommends ca-certificates gcc libc6-dev
 
 WORKDIR /go/build/nakama
-RUN git checkout --quiet "$commit" && \
-    go build -o /go/build-out/nakama -trimpath -mod=vendor -gcflags "-trimpath $PWD" -asmflags "-trimpath $PWD" -ldflags "-s -w -X main.version=$version -X main.commitID=$commit"
+COPY . .
+RUN go build -o /go/build-out/nakama -trimpath -mod=vendor -gcflags "-trimpath $PWD" -asmflags "-trimpath $PWD" -ldflags "-s -w -X main.version=$version -X main.commitID=$commit"
 
 FROM debian:bookworm-slim
-
-MAINTAINER Heroic Labs <support@heroiclabs.com>
 
 ARG version
 
 LABEL version=$version
 LABEL variant=nakama
+LABEL org.opencontainers.image.authors="support@heroiclabs.com"
 LABEL description="Distributed server for social and realtime games and apps."
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN mkdir -p /nakama/data/modules && \
     apt-get update && \
